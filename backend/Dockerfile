@@ -2,16 +2,12 @@ FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-# Copy go.mod and go.sum files if you have them
-# COPY go.mod go.sum ./
-# RUN go mod download
-
 # Copy source code
 COPY wiki.go ./
 COPY edit.html view.html index.html ./
 
-# Build the application
-RUN go build -o wiki .
+# Initialize a Go module and build the application
+RUN go mod init wiki && go build -o wiki .
 
 # Use a smaller image for the final container
 FROM alpine:latest
