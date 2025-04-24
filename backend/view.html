@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{.Title}}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .actions {
+            margin: 15px 0;
+        }
+        .content {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .files {
+            margin-top: 20px;
+        }
+        .files h2 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        .files ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .files li {
+            margin-bottom: 5px;
+        }
+        .files a {
+            text-decoration: none;
+            color: #0366d6;
+        }
+        .files a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{.Title}}</h1>
+
+    <div class="actions">
+        <a href="/edit/{{.Title}}">Edit</a>
+    </div>
+
+    <div class="content">{{printf "%s" .Body}}</div>
+
+    {{if .Files}}
+    <div class="files">
+        <h2>Attachments</h2>
+        <ul>
+            {{range .Files}}
+            <li><a href="/files/{{$.Title}}/{{.}}" target="_blank">{{.}}</a></li>
+            {{end}}
+        </ul>
+    </div>
+    {{end}}
+</body>
+</html>

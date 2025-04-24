@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wiki Clipboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            color: #333;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .container {
+            margin-top: 30px;
+        }
+        .card {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            margin-top: 0;
+        }
+        a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        input[type="text"] {
+            padding: 8px;
+            margin-right: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+        .recent {
+            margin-top: 40px;
+        }
+        .recent ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .recent li {
+            margin-bottom: 8px;
+        }
+    </style>
+    <script>
+        function goToPage() {
+            const pageName = document.getElementById('pageName').value.trim();
+            if (pageName) {
+                window.location.href = '/view/' + pageName;
+            }
+            return false;
+        }
+    </script>
+</head>
+<body>
+    <h1>Wiki Clipboard</h1>
+    
+    <div class="container">
+        <div class="card">
+            <h2>Quick Access</h2>
+            <form onsubmit="return goToPage()">
+                <input type="text" id="pageName" placeholder="Enter page name" required>
+                <button type="submit" class="button">Go</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Create New Page</h2>
+            <p>Enter a name for your new page:</p>
+            <form action="javascript:void(0);" onsubmit="window.location.href='/edit/' + document.getElementById('newPageName').value.trim(); return false;">
+                <input type="text" id="newPageName" placeholder="New page name" required>
+                <button type="submit" class="button">Create</button>
+            </form>
+        </div>
+
+        <div class="recent">
+            <h2>Common Pages</h2>
+            <ul>
+                <li><a href="/view/TestPage">TestPage</a></li>
+                <li><a href="/view/Notes">Notes</a></li>
+                <li><a href="/view/Todo">Todo</a></li>
+                <li><a href="/view/Clipboard">Clipboard</a></li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html> 

@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  wiki:
+    build: .
+    ports:
+      - "21313:21313"
+    volumes:
+      # Mount a volume for persistent data storage
+      - wiki-data:/app/files
+      - wiki-pages:/app
+
+volumes:
+  wiki-data:
+  wiki-pages: 
