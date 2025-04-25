@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 // DATA STRUCTURES
@@ -17,6 +18,11 @@ type Page struct {
   Title string
   Body []byte // byte slice. what is expected by the io lib
   Files []string // Array of file names associated with this page
+}
+
+// For the index page to display all available pages
+type IndexPage struct {
+  Pages []string // List of page titles
 }
 
 // GLOBAL VARIABLES
@@ -292,12 +298,37 @@ func loadPage(title string) (*Page, error) {
   return &Page{Title: title, Body: body, Files: files}, nil
 }
 
+func getAllPages() []string {
+  // Get all .txt files (wiki pages)
+  files, err := filepath.Glob("*.txt")
+  if err != nil {
+    return []string{}
+  }
+  
+  // Extract titles (remove .txt extension)
+  titles := make([]string, 0, len(files))
+  for _, file := range files {
+    // Skip .files.txt metafiles
+    if !strings.HasSuffix(file, ".files.txt") {
+      title := strings.TrimSuffix(file, ".txt")
+      titles = append(titles, title)
+    }
+  }
+  
+  return titles
+}
+
 func rootHandler(w http.ResponseWriter, r *http.Request) {
   if r.URL.Path != "/" {
     http.NotFound(w, r)
     return
   }
-  err := templates.ExecuteTemplate(w, "index.html", nil)
+  
+  // Get all available pages
+  pages := getAllPages()
+  indexPage := &IndexPage{Pages: pages}
+  
+  err := templates.ExecuteTemplate(w, "index.html", indexPage)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
   }

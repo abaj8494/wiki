@@ -3,6 +3,8 @@
 <head>
     <title>Editing {{.Title}}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -128,5 +130,19 @@
         </ul>
     </div>
     {{end}}
+
+    <div class="qr-section" style="text-align: center;">
+        <div id="qrcode"></div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            var pageUrl = window.location.href;
+            var qr = qrcode(0, 'M');
+            qr.addData(pageUrl);
+            qr.make();
+            document.getElementById('qrcode').innerHTML = qr.createImgTag(5);
+        };
+    </script>
 </body>
 </html>

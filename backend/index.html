@@ -3,6 +3,7 @@
 <head>
     <title>Wiki Clipboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -107,7 +108,7 @@
     
     <div class="container">
         <div class="card">
-            <h2>Quick Access</h2>
+            <h2>view</h2>
             <form onsubmit="return goToPage()">
                 <input type="text" id="pageName" placeholder="Enter page name" required>
                 <button type="submit" class="button">Go</button>
@@ -115,7 +116,7 @@
         </div>
 
         <div class="card">
-            <h2>Create New Page</h2>
+            <h2>edit</h2>
             <p>Enter a name for your new page:</p>
             <form action="javascript:void(0);" onsubmit="window.location.href='/edit/' + document.getElementById('newPageName').value.trim(); return false;">
                 <input type="text" id="newPageName" placeholder="New page name" required>
@@ -124,14 +125,31 @@
         </div>
 
         <div class="recent">
-            <h2>Common Pages</h2>
+            <h2>All Pages</h2>
             <ul>
-                <li><a href="/view/TestPage">TestPage</a></li>
-                <li><a href="/view/Notes">Notes</a></li>
-                <li><a href="/view/Todo">Todo</a></li>
-                <li><a href="/view/Clipboard">Clipboard</a></li>
+                {{if .Pages}}
+                    {{range .Pages}}
+                        <li><a href="/view/{{.}}">{{.}}</a></li>
+                    {{end}}
+                {{else}}
+                    <li>No pages found. Create your first page!</li>
+                {{end}}
             </ul>
         </div>
+
+        <div class="qr-section" style="text-align: center;">
+            <div id="qrcode"></div>
+        </div>
+    
+        <script>
+            window.onload = function() {
+                var pageUrl = window.location.href;
+                var qr = qrcode(0, 'M');
+                qr.addData(pageUrl);
+                qr.make();
+                document.getElementById('qrcode').innerHTML = qr.createImgTag(5);
+            };
+        </script>
     </div>
 </body>
 </html> 

@@ -18,7 +18,9 @@ fi
 
 # Build and start the container
 echo 'Building and starting wiki container...'
-docker-compose up -d --build
+docker-compose down -v
+docker-compose build --no-cache
+docker-compose up -d
 
 echo 'Deployment complete!'
 echo 'Your wiki should be running at http://<your-vultr-ip>:21313' 

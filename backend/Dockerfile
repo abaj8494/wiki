@@ -2,6 +2,9 @@ FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
+# Force rebuild on every deployment
+RUN echo "Rebuild timestamp: $(date)"
+
 # Copy source code
 COPY wiki.go ./
 COPY edit.html view.html index.html ./
