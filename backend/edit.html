@@ -68,13 +68,28 @@
         .files li {
             margin-bottom: 5px;
             word-break: break-all;
+            display: flex;
+            align-items: center;
         }
         .files a {
             text-decoration: none;
             color: #0366d6;
+            flex-grow: 1;
         }
         .files a:hover {
             text-decoration: underline;
+        }
+        .delete-file {
+            color: #e74c3c;
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+        .delete-file:hover {
+            color: #c0392b;
         }
         .actions {
             margin: 15px 0;
@@ -136,7 +151,13 @@
         <h2>Attachments</h2>
         <ul>
             {{range .Files}}
-            <li><a href="/files/{{$.Title}}/{{.}}" target="_blank">{{.}}</a></li>
+            <li>
+                <a href="/files/{{$.Title}}/{{.}}" target="_blank">{{.}}</a>
+                <form method="POST" action="/delete-file/{{$.Title}}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this file?');">
+                    <input type="hidden" name="filename" value="{{.}}">
+                    <button type="submit" class="delete-file" title="Delete file">🗑️</button>
+                </form>
+            </li>
             {{end}}
         </ul>
     </div>

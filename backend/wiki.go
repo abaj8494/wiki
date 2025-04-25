@@ -28,7 +28,7 @@ type IndexPage struct {
 
 // GLOBAL VARIABLES
 var templates = template.Must(template.ParseFiles("edit.html", "view.html", "index.html"))
-var validPath = regexp.MustCompile("^/(edit|save|view|upload|delete)/([a-zA-Z0-9]+)$")
+var validPath = regexp.MustCompile("^/(edit|save|view|upload|delete|delete-file)/([a-zA-Z0-9]+)$")
 var filesDir = "./files" // Directory to store uploaded files
 var persistentDir = "/app/persistence" // Directory to store persistent storage
 
@@ -392,6 +392,54 @@ func deleteHandler(w http.ResponseWriter, r *http.Request, title string) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
+// deleteFileHandler handles the deletion of a specific file attachment
+func deleteFileHandler(w http.ResponseWriter, r *http.Request, title string) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	fileName := r.FormValue("filename")
+	if fileName == "" {
+		http.Error(w, "Missing filename parameter", http.StatusBadRequest)
+		return
+	}
+
+	// First, remove the file from the filesystem
+	filePath := filepath.Join(filesDir, title, fileName)
+	if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
+		http.Error(w, fmt.Sprintf("Error deleting file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Then, update the page's files list
+	p, err := loadPage(title)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Remove the file from the Files slice
+	var updatedFiles []string
+	for _, f := range p.Files {
+		if f != fileName {
+			updatedFiles = append(updatedFiles, f)
+		}
+	}
+	p.Files = updatedFiles
+
+	// Save the updated page
+	if err := p.save(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Immediately back up the files after deletion
+	go BackupWikiFiles()
+
+	http.Redirect(w, r, "/view/"+title, http.StatusFound)
+}
+
 func main() {
   // Create files directory if it doesn't exist
   if err := os.MkdirAll(filesDir, 0755); err != nil {
@@ -405,6 +453,11 @@ func main() {
   fileServer := http.FileServer(http.Dir(filesDir))
   http.Handle("/files/", http.StripPrefix("/files/", corsMiddleware(fileServer)))
 
+  // Set up static file server for icon files
+  iconServer := http.FileServer(http.Dir("./icon"))
+  http.Handle("/icon/", http.StripPrefix("/icon/", corsMiddleware(iconServer)))
+  http.Handle("/favicon.ico", http.FileServer(http.Dir("./icon")))
+
   // Root handler
   http.HandleFunc("/", rootHandler)
 
@@ -417,6 +470,7 @@ func main() {
   http.HandleFunc("/save/", makeHandler(saveHandler))
   http.HandleFunc("/upload/", makeHandler(uploadHandler))
   http.HandleFunc("/delete/", makeHandler(deleteHandler))
+  http.HandleFunc("/delete-file/", makeHandler(deleteFileHandler))
   
   log.Println("Starting server on http://localhost:21313")
   log.Fatal(http.ListenAndServe(":21313", nil))
