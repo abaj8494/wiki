@@ -18,8 +18,8 @@ fi
 
 # Create persistent directory if it doesn't exist
 echo 'Ensuring persistent storage directory exists...'
-mkdir -p /var/www/wiki/files
-chmod 755 /var/www/wiki/files
+mkdir -p /var/www/wiki/persistence
+chmod 755 /var/www/wiki/persistence
 
 # Build and start the container
 echo 'Building and starting wiki container...'
@@ -29,4 +29,4 @@ docker-compose up -d
 
 echo 'Deployment complete!'
 echo 'Your wiki should be running at http://<your-vultr-ip>:21313'
-echo 'Files are now persisted in /var/www/wiki/files' 
+echo 'Files are now persisted in /var/www/wiki/persistence' 

@@ -25,7 +25,7 @@ COPY --from=builder /app/index.html /app/index.html
 
 # Create directories
 RUN mkdir -p /app/files
-RUN mkdir -p /app/persistent
+RUN mkdir -p /app/persistence
 
 # Expose the port
 EXPOSE 21313
