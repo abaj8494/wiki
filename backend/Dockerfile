@@ -8,6 +8,7 @@ RUN echo "Rebuild timestamp: $(date)"
 # Copy source code
 COPY wiki.go backup.go ./
 COPY edit.html view.html index.html ./
+COPY icon/ ./icon/
 
 # Initialize a Go module and build the application
 RUN go mod init wiki && go build -o wiki .
@@ -22,6 +23,7 @@ COPY --from=builder /app/wiki /app/wiki
 COPY --from=builder /app/edit.html /app/edit.html
 COPY --from=builder /app/view.html /app/view.html
 COPY --from=builder /app/index.html /app/index.html
+COPY --from=builder /app/icon/ /app/icon/
 
 # Create directories
 RUN mkdir -p /app/files
@@ -31,4 +33,4 @@ RUN mkdir -p /app/persistence
 EXPOSE 21313
 
 # Run the application
-CMD ["/app/wiki"] 
+CMD ["/app/wiki"]
