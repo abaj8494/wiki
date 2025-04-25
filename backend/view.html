@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>{{.Title}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,6 +17,7 @@
             color: #333;
             border-bottom: 1px solid #eee;
             padding-bottom: 10px;
+            word-break: break-word;
         }
         .actions {
             margin: 15px 0;
@@ -24,6 +27,8 @@
             padding: 15px;
             border-radius: 4px;
             white-space: pre-wrap;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
         }
         .files {
             margin-top: 20px;
@@ -38,6 +43,7 @@
         }
         .files li {
             margin-bottom: 5px;
+            word-break: break-all;
         }
         .files a {
             text-decoration: none;
@@ -46,13 +52,40 @@
         .files a:hover {
             text-decoration: underline;
         }
+        .qr-section {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+        .qr-section h2 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+            .content {
+                padding: 10px;
+            }
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+        }
     </style>
 </head>
 <body>
     <h1>{{.Title}}</h1>
 
     <div class="actions">
-        <a href="/edit/{{.Title}}">Edit</a>
+        <a href="/">Home</a> | <a href="/edit/{{.Title}}">Edit</a>
     </div>
 
     <div class="content">{{printf "%s" .Body}}</div>
@@ -67,5 +100,20 @@
         </ul>
     </div>
     {{end}}
+
+    <div class="qr-section">
+        <h2>QR Code</h2>
+        <div id="qrcode"></div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            var pageUrl = window.location.href;
+            var qr = qrcode(0, 'M');
+            qr.addData(pageUrl);
+            qr.make();
+            document.getElementById('qrcode').innerHTML = qr.createImgTag(5);
+        };
+    </script>
 </body>
 </html>

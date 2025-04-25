@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Wiki Clipboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -65,6 +66,30 @@
         }
         .recent li {
             margin-bottom: 8px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            h1 {
+                font-size: 1.5em;
+            }
+            .card {
+                padding: 15px;
+            }
+            input[type="text"] {
+                width: 100%;
+                margin-bottom: 10px;
+                margin-right: 0;
+                box-sizing: border-box;
+            }
+            .button {
+                width: 100%;
+                margin: 5px 0;
+                box-sizing: border-box;
+            }
         }
     </style>
     <script>
