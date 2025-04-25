@@ -6,7 +6,7 @@ WORKDIR /app
 RUN echo "Rebuild timestamp: $(date)"
 
 # Copy source code
-COPY wiki.go ./
+COPY wiki.go backup.go ./
 COPY edit.html view.html index.html ./
 
 # Initialize a Go module and build the application
@@ -23,8 +23,9 @@ COPY --from=builder /app/edit.html /app/edit.html
 COPY --from=builder /app/view.html /app/view.html
 COPY --from=builder /app/index.html /app/index.html
 
-# Create directory for uploaded files
+# Create directories
 RUN mkdir -p /app/files
+RUN mkdir -p /app/persistent
 
 # Expose the port
 EXPOSE 21313

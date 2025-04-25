@@ -157,6 +157,10 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
       http.Error(w, err.Error(), http.StatusInternalServerError)
       return
   }
+  
+  // Immediately back up the file after saving
+  go BackupWikiFiles()
+  
   http.Redirect(w, r, "/view/"+title, http.StatusFound)
 }
 
@@ -222,6 +226,9 @@ func uploadHandler(w http.ResponseWriter, r *http.Request, title string) {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
+  
+  // Immediately back up the files after uploading
+  go BackupWikiFiles()
 
   w.WriteHeader(http.StatusOK)
   w.Write([]byte("File uploaded successfully"))
@@ -284,7 +291,17 @@ func loadPage(title string) (*Page, error) {
   filename := title + ".txt"
   body, err := os.ReadFile(filename)
   if err != nil {
-    return nil, err
+    // Try to restore from persistent storage if file not found
+    restoreErr := RestoreWikiFile(title)
+    if restoreErr == nil {
+      // Successfully restored, try reading again
+      body, err = os.ReadFile(filename)
+      if err != nil {
+        return nil, err
+      }
+    } else {
+      return nil, err
+    }
   }
   
   // Load files list if it exists
@@ -339,6 +356,9 @@ func main() {
   if err := os.MkdirAll(filesDir, 0755); err != nil {
     log.Fatal(err)
   }
+
+  // Set up file watcher to periodically backup wiki files
+  SetupFileWatcher()
 
   // Set up static file server for uploaded files
   fileServer := http.FileServer(http.Dir(filesDir))

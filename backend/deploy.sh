@@ -16,11 +16,17 @@ if ! [ -x "$(command -v docker-compose)" ]; then
   chmod +x /usr/local/bin/docker-compose
 fi
 
+# Create persistent directory if it doesn't exist
+echo 'Ensuring persistent storage directory exists...'
+mkdir -p /var/www/wiki/files
+chmod 755 /var/www/wiki/files
+
 # Build and start the container
 echo 'Building and starting wiki container...'
-docker-compose down -v
+docker-compose down
 docker-compose build --no-cache
 docker-compose up -d
 
 echo 'Deployment complete!'
-echo 'Your wiki should be running at http://<your-vultr-ip>:21313' 
+echo 'Your wiki should be running at http://<your-vultr-ip>:21313'
+echo 'Files are now persisted in /var/www/wiki/files' 

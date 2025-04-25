@@ -8,7 +8,9 @@ services:
     volumes:
       # Mount a volume for persistent data storage
       - wiki-data:/app/files
-      - wiki-pages:/app
+      - wiki-pages:/app/persistent
+      # Direct host mapping for development
+      - /var/www/wiki/files:/app/persistent
 
 volumes:
   wiki-data:
