@@ -8,8 +8,13 @@ import (
 	"io"
 )
 
-// Setting this to a path that maps to the host's /var/www/wiki/persistence via the Docker volume
-const persistentDir = "/app/persistence"
+// persistentDir is declared in wiki.go
+// init function to ensure variable values are coordinated
+func init() {
+	if persistentDir == "" {
+		persistentDir = "/app/persistence"
+	}
+}
 
 // BackupWikiFiles copies all wiki text files and uploaded files to the persistent storage directory
 func BackupWikiFiles() {
@@ -146,6 +151,27 @@ func copyFile(src, dst string) error {
 
 // RestoreAllFiles restores all wiki files and attachments from persistent storage
 func RestoreAllFiles() {
+	log.Printf("Starting restoration from %s", persistentDir)
+	
+	// Also restore .files.txt metafiles first
+	metafiles, err := filepath.Glob(filepath.Join(persistentDir, "*.files.txt"))
+	if err == nil {
+		for _, metaFile := range metafiles {
+			fileName := filepath.Base(metaFile)
+			destPath := fileName
+			
+			// Read from persistent storage
+			content, err := os.ReadFile(metaFile)
+			if err == nil {
+				if err := os.WriteFile(destPath, content, 0600); err != nil {
+					log.Printf("Error restoring metafile %s: %v", fileName, err)
+				} else {
+					log.Printf("Restored metadata file %s", fileName)
+				}
+			}
+		}
+	}
+	
 	// Restore text files
 	files, err := filepath.Glob(filepath.Join(persistentDir, "*.txt"))
 	if err != nil {
@@ -154,16 +180,16 @@ func RestoreAllFiles() {
 	}
 
 	for _, persistentFile := range files {
+		// Skip .files.txt files as we already processed them
+		if strings.HasSuffix(persistentFile, ".files.txt") {
+			continue
+		}
+		
 		// Get the filename without the path
 		fileName := filepath.Base(persistentFile)
 		
 		// Create the destination path
 		destPath := fileName
-		
-		// Skip if file already exists in app directory
-		if _, err := os.Stat(destPath); err == nil {
-			continue
-		}
 		
 		// Read from persistent storage
 		content, err := os.ReadFile(persistentFile)
@@ -185,6 +211,16 @@ func RestoreAllFiles() {
 			if err := RestoreUploadedFiles(title); err != nil {
 				log.Printf("Error restoring uploaded files for %s: %v", title, err)
 			}
+		}
+	}
+	
+	// Debug - list all files in persistence folder
+	if files, err := filepath.Glob(filepath.Join(persistentDir, "*")); err == nil {
+		log.Printf("Files in persistent directory: %v", files)
+		
+		// Check files folder too
+		if files, err := filepath.Glob(filepath.Join(persistentDir, "files", "*")); err == nil {
+			log.Printf("Files in persistent/files directory: %v", files)
 		}
 	}
 }

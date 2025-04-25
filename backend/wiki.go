@@ -3,6 +3,7 @@ package main
 import (
 	//"fmt"
 	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
@@ -27,8 +28,9 @@ type IndexPage struct {
 
 // GLOBAL VARIABLES
 var templates = template.Must(template.ParseFiles("edit.html", "view.html", "index.html"))
-var validPath = regexp.MustCompile("^/(edit|save|view|upload)/([a-zA-Z0-9]+)$")
+var validPath = regexp.MustCompile("^/(edit|save|view|upload|delete)/([a-zA-Z0-9]+)$")
 var filesDir = "./files" // Directory to store uploaded files
+var persistentDir = "/app/persistence" // Directory to store persistent storage
 
 // enableCORS adds CORS headers to allow requests from the frontend
 func enableCORS(w http.ResponseWriter) {
@@ -351,6 +353,45 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
   }
 }
 
+// deleteHandler handles the deletion of a wiki page
+func deleteHandler(w http.ResponseWriter, r *http.Request, title string) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Delete the main text file
+	filename := title + ".txt"
+	if err := os.Remove(filename); err != nil && !os.IsNotExist(err) {
+		http.Error(w, fmt.Sprintf("Error deleting page: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Delete files list if it exists
+	filesListFilename := title + ".files.txt"
+	os.Remove(filesListFilename) // Ignore errors as the file might not exist
+
+	// Delete the files directory if it exists
+	pageDirPath := filepath.Join(filesDir, title)
+	if _, err := os.Stat(pageDirPath); err == nil {
+		if err := os.RemoveAll(pageDirPath); err != nil {
+			log.Printf("Error removing files directory for %s: %v", title, err)
+		}
+	}
+
+	// Also remove from persistence if possible
+	persistentPath := filepath.Join(persistentDir, filename)
+	os.Remove(persistentPath) // Ignore errors
+	
+	persistentFilesList := filepath.Join(persistentDir, filesListFilename)
+	os.Remove(persistentFilesList) // Ignore errors
+	
+	persistentFilesDir := filepath.Join(persistentDir, "files", title)
+	os.RemoveAll(persistentFilesDir) // Ignore errors
+
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
 func main() {
   // Create files directory if it doesn't exist
   if err := os.MkdirAll(filesDir, 0755); err != nil {
@@ -375,6 +416,7 @@ func main() {
   http.HandleFunc("/edit/", makeHandler(editHandler))
   http.HandleFunc("/save/", makeHandler(saveHandler))
   http.HandleFunc("/upload/", makeHandler(uploadHandler))
+  http.HandleFunc("/delete/", makeHandler(deleteHandler))
   
   log.Println("Starting server on http://localhost:21313")
   log.Fatal(http.ListenAndServe(":21313", nil))
