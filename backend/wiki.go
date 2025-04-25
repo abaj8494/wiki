@@ -456,7 +456,11 @@ func main() {
   // Set up static file server for icon files
   iconServer := http.FileServer(http.Dir("./icon"))
   http.Handle("/icon/", http.StripPrefix("/icon/", corsMiddleware(iconServer)))
-  http.Handle("/favicon.ico", http.FileServer(http.Dir("./icon")))
+  
+  // Serve favicon.ico directly from the icon directory
+  http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+    http.ServeFile(w, r, "./icon/favicon.ico")
+  })
 
   // Root handler
   http.HandleFunc("/", rootHandler)
