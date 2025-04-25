@@ -1,60 +1,21 @@
-# Wiki Clipboard
+# wiki clipboard
 
-A simple wiki-style application that serves as a temporary clipboard for text and files.
+this project has been on my mind for about 3 years. cross-platform copy-pasting of text / attachments has always been a pain.
 
-## Features
+the backend for this application is based on https://go.dev/doc/articles/wiki/, though I have extended the frontend and dockerised it to suit my needs
 
-- **Text Storage**: Create, view, and edit text entries
-- **File Attachments**: Upload and store files with wiki pages
-- **Clean UI**: Simple, responsive interface
+# usage
 
-## Stack
-
-- Backend: Go
-- Templates: HTML with CSS styling
-
-## Deployment
-
-### Running Locally
+the deployed app is not for you, but i advocate for everyone to have access to such a wiki; as such this source code _is_ for you.
 
 ```bash
 cd backend
-go run wiki.go
+chmod +x deploy.sh
+./deploy.sh
 ```
 
-The application will be available at http://localhost:21313
+# features
 
-### Docker Deployment (Vultr)
-
-1. Clone this repository to your Vultr instance
-2. Make the deployment script executable:
-   ```bash
-   cd backend
-   chmod +x deploy.sh
-   ```
-3. Run the deployment script:
-   ```bash
-   ./deploy.sh
-   ```
-
-The application will be available at http://your-vultr-ip:21313
-
-## Usage
-
-- Create/edit a page: Navigate to `/edit/PageName`
-- View a page: Navigate to `/view/PageName`
-- Upload files: Use the file upload form on any edit page
-
-## API
-
-The application provides a simple JSON API:
-
-- Get page content: `/api/page?title=PageName`
-- Uploaded files: `/files/PageName/filename`
-
-## Persistence
-
-Data is stored as text files in the application directory:
-- Page content: `PageName.txt`
-- File attachments: `files/PageName/filename`
-- File lists: `PageName.files.txt`
+- qr-code for easy mobile navigation
+- edit / view / delete / upload (attachment) endpoints
+- persistence. saves txt files and attachments + reloads them on docker restarts.
