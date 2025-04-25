@@ -24,7 +24,7 @@ func BackupWikiFiles() {
 		return
 	}
 
-	// 1. Backup text files
+	// 1. Backup text files and .files.txt metadata files
 	// Get all txt files in the current directory
 	textFiles, err := filepath.Glob("*.txt")
 	if err != nil {
@@ -34,11 +34,6 @@ func BackupWikiFiles() {
 
 	// Copy each file to the persistent directory
 	for _, file := range textFiles {
-		// Skip files.txt metafiles as they'll be recreated
-		if strings.HasSuffix(file, ".files.txt") {
-			continue
-		}
-
 		// Read the source file
 		content, err := os.ReadFile(file)
 		if err != nil {
@@ -153,42 +148,25 @@ func copyFile(src, dst string) error {
 func RestoreAllFiles() {
 	log.Printf("Starting restoration from %s", persistentDir)
 	
-	// Also restore .files.txt metafiles first
-	metafiles, err := filepath.Glob(filepath.Join(persistentDir, "*.files.txt"))
-	if err == nil {
-		for _, metaFile := range metafiles {
-			fileName := filepath.Base(metaFile)
-			destPath := fileName
-			
-			// Read from persistent storage
-			content, err := os.ReadFile(metaFile)
-			if err == nil {
-				if err := os.WriteFile(destPath, content, 0600); err != nil {
-					log.Printf("Error restoring metafile %s: %v", fileName, err)
-				} else {
-					log.Printf("Restored metadata file %s", fileName)
-				}
-			}
-		}
-	}
-	
-	// Restore text files
-	files, err := filepath.Glob(filepath.Join(persistentDir, "*.txt"))
-	if err != nil {
-		log.Printf("Error finding persistent text files: %v", err)
+	// Check if persistent directory exists
+	if _, err := os.Stat(persistentDir); os.IsNotExist(err) {
+		log.Printf("Persistent directory %s does not exist, skipping restoration", persistentDir)
 		return
 	}
-
-	for _, persistentFile := range files {
-		// Skip .files.txt files as we already processed them
-		if strings.HasSuffix(persistentFile, ".files.txt") {
-			continue
-		}
-		
-		// Get the filename without the path
+	
+	// Get all files from persistent directory (both .txt and .files.txt)
+	allFiles, err := filepath.Glob(filepath.Join(persistentDir, "*.txt"))
+	if err != nil {
+		log.Printf("Error finding persistent files: %v", err)
+		return
+	}
+	
+	// Keep track of page titles we've restored
+	restoredPages := make(map[string]bool)
+	
+	// Process all files from persistent storage
+	for _, persistentFile := range allFiles {
 		fileName := filepath.Base(persistentFile)
-		
-		// Create the destination path
 		destPath := fileName
 		
 		// Read from persistent storage
@@ -204,15 +182,22 @@ func RestoreAllFiles() {
 		} else {
 			log.Printf("Restored %s from persistent storage", fileName)
 			
-			// Extract title from filename (remove .txt extension)
-			title := strings.TrimSuffix(fileName, ".txt")
-			
-			// Also restore any uploaded files for this page
-			if err := RestoreUploadedFiles(title); err != nil {
-				log.Printf("Error restoring uploaded files for %s: %v", title, err)
+			// For regular txt files (not .files.txt), also restore the attachments
+			if !strings.HasSuffix(fileName, ".files.txt") {
+				title := strings.TrimSuffix(fileName, ".txt")
+				restoredPages[title] = true
+				
+				// Restore any uploaded files for this page
+				if err := RestoreUploadedFiles(title); err != nil {
+					log.Printf("Error restoring uploaded files for %s: %v", title, err)
+				}
 			}
 		}
 	}
+	
+	// Now check for pages with attachments but no .files.txt
+	// This can happen if the files directory exists but the metadata file was lost
+	regenerateAttachmentMetadata(restoredPages)
 	
 	// Debug - list all files in persistence folder
 	if files, err := filepath.Glob(filepath.Join(persistentDir, "*")); err == nil {
@@ -221,6 +206,88 @@ func RestoreAllFiles() {
 		// Check files folder too
 		if files, err := filepath.Glob(filepath.Join(persistentDir, "files", "*")); err == nil {
 			log.Printf("Files in persistent/files directory: %v", files)
+		}
+	}
+}
+
+// regenerateAttachmentMetadata ensures all pages with attachments have proper .files.txt metadata files
+func regenerateAttachmentMetadata(restoredPages map[string]bool) {
+	// Check the persistent files directory
+	persistentFilesDir := filepath.Join(persistentDir, "files")
+	if _, err := os.Stat(persistentFilesDir); os.IsNotExist(err) {
+		return
+	}
+	
+	// Get all directories in the persistent files directory
+	dirs, err := os.ReadDir(persistentFilesDir)
+	if err != nil {
+		log.Printf("Error reading persistent files directory: %v", err)
+		return
+	}
+	
+	// For each page directory
+	for _, dir := range dirs {
+		if !dir.IsDir() {
+			continue
+		}
+		
+		pageName := dir.Name()
+		// If we already processed this page, skip it
+		if restoredPages[pageName] {
+			continue
+		}
+		
+		// Check if we have attachments for this page
+		pageDir := filepath.Join(persistentFilesDir, pageName)
+		files, err := os.ReadDir(pageDir)
+		if err != nil || len(files) == 0 {
+			continue
+		}
+		
+		// Create the page .txt file if it doesn't exist (empty content)
+		pageFile := pageName + ".txt"
+		if _, err := os.Stat(pageFile); os.IsNotExist(err) {
+			// Look for it in persistent storage first
+			persistentPageFile := filepath.Join(persistentDir, pageFile)
+			if _, err := os.Stat(persistentPageFile); err == nil {
+				// File exists in persistent storage, copy it
+				content, err := os.ReadFile(persistentPageFile)
+				if err == nil {
+					if err := os.WriteFile(pageFile, content, 0600); err != nil {
+						log.Printf("Error restoring page file %s: %v", pageFile, err)
+					}
+				}
+			} else {
+				// Create empty page file
+				if err := os.WriteFile(pageFile, []byte{}, 0600); err != nil {
+					log.Printf("Error creating empty page file %s: %v", pageFile, err)
+					continue
+				}
+			}
+		}
+		
+		// Build the list of attachment filenames
+		var fileNames []string
+		for _, file := range files {
+			if !file.IsDir() {
+				fileNames = append(fileNames, file.Name())
+			}
+		}
+		
+		if len(fileNames) > 0 {
+			// Create or update the .files.txt metadata file
+			filesListFilename := pageName + ".files.txt"
+			filesContent := strings.Join(fileNames, "\n")
+			if err := os.WriteFile(filesListFilename, []byte(filesContent), 0600); err != nil {
+				log.Printf("Error creating metadata file %s: %v", filesListFilename, err)
+			} else {
+				log.Printf("Generated metadata file for %s with %d attachments", pageName, len(fileNames))
+			}
+			
+			// Also restore the actual files to the app directory
+			if err := RestoreUploadedFiles(pageName); err != nil {
+				log.Printf("Error restoring generated attachment files for %s: %v", pageName, err)
+			}
 		}
 	}
 }
@@ -249,12 +316,16 @@ func RestoreUploadedFiles(title string) error {
 	}
 	
 	// Copy each file to the app directory
+	filesCopied := false
+	var fileNames []string
+	
 	for _, fileInfo := range files {
 		if fileInfo.IsDir() {
 			continue
 		}
 		
 		fileName := fileInfo.Name()
+		fileNames = append(fileNames, fileName)
 		srcPath := filepath.Join(srcDir, fileName)
 		destPath := filepath.Join(destDir, fileName)
 		
@@ -262,6 +333,23 @@ func RestoreUploadedFiles(title string) error {
 			log.Printf("Error restoring file %s: %v", fileName, err)
 		} else {
 			log.Printf("Restored file %s for page %s", fileName, title)
+			filesCopied = true
+		}
+	}
+	
+	// If we successfully copied files, ensure the metadata file exists
+	if filesCopied && len(fileNames) > 0 {
+		filesListFilename := title + ".files.txt"
+		// Check if the file exists first
+		_, err := os.Stat(filesListFilename)
+		if os.IsNotExist(err) {
+			// File doesn't exist, create it
+			filesContent := strings.Join(fileNames, "\n")
+			if err := os.WriteFile(filesListFilename, []byte(filesContent), 0600); err != nil {
+				log.Printf("Error creating missing metadata file %s: %v", filesListFilename, err)
+			} else {
+				log.Printf("Created missing metadata file for %s with %d attachments", title, len(fileNames))
+			}
 		}
 	}
 	
