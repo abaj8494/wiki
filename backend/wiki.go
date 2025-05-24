@@ -11,7 +11,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
+	"time"
 )
 
 // DATA STRUCTURES
@@ -28,7 +30,7 @@ type IndexPage struct {
 
 // GLOBAL VARIABLES
 var templates = template.Must(template.ParseFiles("edit.html", "view.html", "index.html"))
-var validPath = regexp.MustCompile("^/(edit|save|view|upload|delete|delete-file)/([a-zA-Z0-9]+)$")
+var validPath = regexp.MustCompile("^/(edit|save|view|upload|delete|delete-file)/([a-zA-Z0-9-]+)$")
 var filesDir = "./files" // Directory to store uploaded files
 var persistentDir = "/app/persistence" // Directory to store persistent storage
 
@@ -324,14 +326,40 @@ func getAllPages() []string {
     return []string{}
   }
   
-  // Extract titles (remove .txt extension)
-  titles := make([]string, 0, len(files))
+  // Create a slice to store file info for sorting
+  type fileInfo struct {
+    name    string
+    modTime time.Time
+  }
+  
+  fileInfos := make([]fileInfo, 0, len(files))
+  
+  // Extract titles and get modification time for each file
   for _, file := range files {
     // Skip .files.txt metafiles
     if !strings.HasSuffix(file, ".files.txt") {
+      info, err := os.Stat(file)
+      if err != nil {
+        continue
+      }
+      
       title := strings.TrimSuffix(file, ".txt")
-      titles = append(titles, title)
+      fileInfos = append(fileInfos, fileInfo{
+        name:    title,
+        modTime: info.ModTime(),
+      })
     }
+  }
+  
+  // Sort files by modification time (newest first)
+  sort.Slice(fileInfos, func(i, j int) bool {
+    return fileInfos[i].modTime.After(fileInfos[j].modTime)
+  })
+  
+  // Extract sorted titles
+  titles := make([]string, 0, len(fileInfos))
+  for _, info := range fileInfos {
+    titles = append(titles, info.name)
   }
   
   return titles

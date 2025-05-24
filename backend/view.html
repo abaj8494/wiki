@@ -35,6 +35,24 @@
             white-space: pre-wrap;
             overflow-wrap: break-word;
             word-wrap: break-word;
+            position: relative;
+        }
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 14px;
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+        .copy-button:hover {
+            opacity: 1;
         }
         .files {
             margin-top: 20px;
@@ -94,7 +112,10 @@
         <a href="/">Home</a> | <a href="/edit/{{.Title}}">Edit</a>
     </div>
 
-    <div class="content">{{printf "%s" .Body}}</div>
+    <div class="content">
+        <button class="copy-button" onclick="copyContent()">Copy</button>
+        {{printf "%s" .Body}}
+    </div>
 
     {{if .Files}}
     <div class="files">
@@ -119,6 +140,26 @@
             qr.make();
             document.getElementById('qrcode').innerHTML = qr.createImgTag(5);
         };
+        
+        function copyContent() {
+            var content = document.querySelector('.content').innerText;
+            // Remove the "Copy" text from the copied content
+            content = content.replace('Copy', '').trim();
+            
+            navigator.clipboard.writeText(content)
+                .then(() => {
+                    const button = document.querySelector('.copy-button');
+                    const originalText = button.innerText;
+                    button.innerText = 'Copied!';
+                    setTimeout(() => {
+                        button.innerText = originalText;
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                    alert('Failed to copy content');
+                });
+        }
     </script>
 </body>
 </html>
